@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { UsuariosModel } from "../models/usuario.model";
+
 import { ResponseType, UsuarioType} from "../uuid/types";
+import jwt from "jsonwebtoken";
 
 export const usuarioController = {
     async createUsuario(req: Request, res: Response) {
@@ -107,6 +109,75 @@ export const usuarioController = {
             });
         }
     },
+
+    
+async loginUsuario(req: Request, res: Response) {
+    try {
+        // 1. Receber os dados
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                status: "error",
+                message: "Email ou senha não fornecidos.",
+                data: null
+            });
+        }
+
+        // 2. Verificar as credenciais
+        const usuario = await UsuariosModel.login(email, password);
+
+        if (!usuario) {
+            return res.status(401).json({
+                status: "error",
+                message: "Email ou senha inválidos.",
+                data: null
+            });
+        }
+
+        // 3. Verificar a chave secreta
+        const secret = process.env.JWT_SECRET;
+
+        if (!secret) {
+            throw new Error("JWT_SECRET não configurada.");
+        }
+
+        // 4. Criar o conteúdo do token
+        const payload = {
+            id: String(usuario.id),
+            email: usuario.email,
+            role: usuario.tipo
+        };
+
+        // 5. Gerar o JWT
+        const token = jwt.sign(
+            payload,
+            secret,
+            { expiresIn: "7d" }
+        );
+
+        // 6. Devolver o resultado
+        return res.status(200).json({
+            status: "success",
+            message: "Login realizado com sucesso!",
+            data: {
+                token,
+                user: payload
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro no login:", error);
+
+        return res.status(500).json({
+            status: "error",
+            message: "Erro interno do servidor.",
+            data: null
+        });
+    }
+},
+
+
     async updatedUsuario(req: Request, res: Response) {
         try {
             const { id } = req.params;

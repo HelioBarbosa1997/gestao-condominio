@@ -52,6 +52,20 @@ export const UsuariosModel = {
         }
     },
 
+    async login(email: string, password: string): Promise<UsuarioType | null> {
+        try {
+            const result = await db.query(
+                `SELECT * FROM usuarios WHERE email = $1`,
+                [email]
+            );
+            if (result.rows.length === 0 || !result?.rows[0]) return null;
+            return result.rows[0];
+        } catch (error) {
+            return null;
+        }
+    },
+
+
     async getByEmail(email: string): Promise<UsuarioType | null> {
         try {
             const result = await db.query(
@@ -61,7 +75,6 @@ export const UsuariosModel = {
             if (result.rows.length === 0 || !result?.rows[0]) return null;
             return result.rows[0];
         } catch (error) {
-            console.log(error);
             return null;
         }
     },
